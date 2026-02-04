@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auth Demo</title>
+  </head>
+
+  <body>
+    <div>
+      <h3>Sign Up</h3>
+      <input id="signUp-username" type="text" placeholder="username" />
+      <input id="signUp-password" type="password" placeholder="password" />
+      <button onclick="signUp()">Sign Up</button>
+    </div>
+
+    <hr />
+
+    <div>
+      <h3>Sign In</h3>
+      <input id="signIn-username" type="text" placeholder="username" />
+      <input id="signIn-password" type="password" placeholder="password" />
+      <button onclick="signIn()">Sign In</button>
+    </div>
+
+    <hr />
+
+    <button onclick="getUserInformation()">Get User Info</button>
+    <button onclick="logOut()">Log Out</button>
+
+    <h3>User Information</h3>
+    <div id="information"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"></script>
+
+    <script>
+      async function signUp() {
+        const username = document.getElementById("signUp-username").value;
+        const password = document.getElementById("signUp-password").value;
+
+        await axios.post("http://localhost:3000/signup", {
+          username,
+          password,
+        });
+
+        alert("Signed up successfully");
+      }
+
+      async function signIn() {
+        try {
+          const username = document.getElementById("signIn-username").value;
+          const password = document.getElementById("signIn-password").value;
+
+          const response = await axios.post("http://localhost:3000/signin", {
+            username,
+            password,
+          });
+
+          localStorage.setItem("token", response.data.token);
+          alert("Signed in successfully");
+        } catch (err) {
+          alert(err.response.data.message);
+        }
+      }
+
+      async function getUserInformation() {
+        try {
+          const response = await axios.get("http://localhost:3000/me", {
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token"),
+            },
+          });
+
+          document.getElementById("information").innerText =
+            `Username: ${response.data.username}`;
+        } catch (err) {
+          alert("Not logged in");
+        }
+      }
+
+      function logOut() {
+        localStorage.removeItem("token");
+        document.getElementById("information").innerText = "";
+        alert("Logged out");
+      }
+    </script>
+  </body>
+</html>
