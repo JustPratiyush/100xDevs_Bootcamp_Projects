@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Todo App</title>
+  </head>
+  <body>
+    <h2>Signup</h2>
+    <input id="su-username" placeholder="username" />
+    <input id="su-password" type="password" placeholder="password" />
+    <button onclick="signup()">Signup</button>
+
+    <h2>Signin</h2>
+    <input id="si-username" placeholder="username" />
+    <input id="si-password" type="password" placeholder="password" />
+    <button onclick="signin()">Signin</button>
+
+    <hr />
+
+    <div id="todo-section" style="display: none">
+      <h2>Create Todo</h2>
+      <input id="todo-title" placeholder="todo title" />
+      <button onclick="addTodo()">Add Todo</button>
+
+      <h2>Your Todos</h2>
+      <ul id="todo-list"></ul>
+
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.7/axios.min.js"></script>
+
+    <script>
+      const API = "http://localhost:3001";
+
+      function headers() {
+        return {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        };
+      }
+
+      async function signup() {
+        try {
+          await axios.post(API + "/signup", {
+            username: document.getElementById("su-username").value,
+            password: document.getElementById("su-password").value,
+          });
+          alert("✅ Signup successful! Now sign in.");
+        } catch (e) {
+          alert("❌ User already exists");
+        }
+      }
+
+      async function signin() {
+        try {
+          const res = await axios.post(API + "/signin", {
+            username: document.getElementById("si-username").value,
+            password: document.getElementById("si-password").value,
+          });
+
+          localStorage.setItem("token", res.data.token);
+          alert("✅ Signed in successfully!");
+
+          document.getElementById("todo-section").style.display = "block";
+          loadTodos();
+        } catch (e) {
+          alert("❌ Invalid username or password");
+        }
+      }
+
+      async function loadTodos() {
+        const res = await axios.get(API + "/todos", { headers: headers() });
+        const list = document.getElementById("todo-list");
+        list.innerHTML = "";
+
+        if (res.data.length === 0) {
+          list.innerHTML = "<li>No todos yet</li>";
+          return;
+        }
+
+        res.data.forEach((todo) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+          <input type="checkbox"
+            ${todo.completed ? "checked" : ""}
+            onchange="toggleTodo(${todo.id}, this.checked)">
+          <span style="text-decoration:${todo.completed ? "line-through" : "none"}">
+            ${todo.title}
+          </span>
+          <button onclick="deleteTodo(${todo.id})">❌</button>
+        `;
+          list.appendChild(li);
+        });
+      }
+
+      async function addTodo() {
+        const title = document.getElementById("todo-title").value;
+        if (!title) {
+          alert("⚠️ Todo cannot be empty");
+          return;
+        }
+
+        await axios.post(API + "/todos", { title }, { headers: headers() });
+        alert("📝 Todo added!");
+        document.getElementById("todo-title").value = "";
+        loadTodos();
+      }
+
+      async function toggleTodo(id, completed) {
+        await axios.put(
+          API + `/todos/${id}`,
+          { completed },
+          { headers: headers() },
+        );
+        loadTodos();
+      }
+
+      async function deleteTodo(id) {
+        await axios.delete(API + `/todos/${id}`, { headers: headers() });
+        alert("🗑️ Todo deleted");
+        loadTodos();
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        document.getElementById("todo-section").style.display = "none";
+        document.getElementById("todo-list").innerHTML = "";
+        alert("👋 Logged out");
+      }
+    </script>
+  </body>
+</html>
